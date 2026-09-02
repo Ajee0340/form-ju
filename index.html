@@ -610,6 +610,15 @@
     setMsg('Generating PDF…', true);
     sheet.classList.add('pdf-capture');
     try{
+      // Wait for web fonts to finish loading and for the style change above to
+      // actually paint — capturing too early is what causes the blurry/doubled
+      // "ghost text" look (fallback font + real font both getting drawn).
+      if (document.fonts && document.fonts.ready){
+        try{ await document.fonts.ready; }catch(e){ /* ignore */ }
+      }
+      await new Promise(r => requestAnimationFrame(r));
+      await new Promise(r => requestAnimationFrame(r));
+
       const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
       const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
@@ -655,6 +664,8 @@
     if (e.target.hasAttribute('required')) e.target.classList.add('touched');
   });
 
+  // Default Date Received to today, then try to restore any saved draft (which will override this if present).
+  document.getElementById('dateReceived').value = new Date().toISOString().slice(0,10);
   loadDraft();
 })();
 </script>
